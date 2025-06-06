@@ -1,25 +1,24 @@
 from flask import Flask, jsonify
 import time
+from threading import Lock
 
 app = Flask(__name__)
 
-@app.route("/time")
-def get_time():
-    return jsonify({"time": int(time.time())})
-
-if __name__ == "__main__":
-    app.run()
 time_requests_count = 0
+counter_lock = Lock()
 
 @app.route('/time', methods=['GET'])
 def get_time():
     global time_requests_count
-    time_requests_count += 1
+    with counter_lock:
+        time_requests_count += 1
     return jsonify({'time': int(time.time())})
 
 @app.route('/metrics', methods=['GET'])
 def get_metrics():
-    return jsonify({'count': time_requests_count})
+    global time_requests_count
+    with counter_lock:
+        return jsonify({'count': time_requests_count})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
