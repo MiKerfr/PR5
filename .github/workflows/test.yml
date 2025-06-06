@@ -1,27 +1,51 @@
 name: Run Tests
 
-on: 
+on:
   push:
-    branches: [ '*' ]  
+    branches: [ '*' ]
   pull_request:
-    branches: [ '*' ]  
+    branches: [ '*' ]
 
 jobs:
   test:
-    runs-on: ubuntu
+    runs-on: self-hosted
     
     steps:
       
       - uses: actions/checkout@v2
-        
+        with:
+          fetch-depth: 0 
+
       
-      - name: Use Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
           node-version: '14'
+          cache: 'npm'
+
+      
+      - name: Install dependencies
+        run: |
+          npm ci --prefer-offline
+          npm cache verify
+      
+      - name: Run tests
+        run: |
+          npm test -- --coverage
+          
           
       
-      - run: npm install
-        
+      - name: Upload test results
+        if: always()  
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-results
+          path: |
+            coverage/
+            test-results.xml  
+          
       
-      - run: npm test
+      - name: Notify test status
+        if: always()
+        run: |
+          echo "Tests completed with status: ${{ job.status }}"
